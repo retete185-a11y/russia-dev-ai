@@ -1,14 +1,20 @@
 import os
+
 from dotenv import load_dotenv
 from openai import OpenAI
+
+from ai.prompts import SYSTEM_PROMPT, GENERATOR_PROMPT
 
 load_dotenv()
 
 API_KEY = os.getenv("AI_API_KEY")
-MODEL = os.getenv("AI_MODEL", "gpt-5.6")
+MODEL = os.getenv("AI_MODEL")
 
 if not API_KEY:
     raise RuntimeError("AI_API_KEY не установлен")
+
+if not MODEL:
+    raise RuntimeError("AI_MODEL не установлен")
 
 client = OpenAI(api_key=API_KEY)
 
@@ -19,28 +25,26 @@ class RussiaDevAI:
         self.name = "RUSSIA DEV AI"
         self.version = "1.0.0"
 
-    def generate_code(self, request):
+    def generate_code(self, request: str):
+        prompt = GENERATOR_PROMPT.format(request=request)
+
         response = client.responses.create(
             model=MODEL,
-            instructions=(
-                "Ты RUSSIA DEV AI — помощник разработчика RP-проектов. "
-                "Помогай создавать оригинальный код, игровые системы, "
-                "SQL и структуру проектов. "
-                "Не выдавай украденные или закрытые исходники."
-            ),
-            input=request
+            instructions=SYSTEM_PROMPT,
+            input=prompt
         )
 
         return response.output_text
 
-    def analyze_code(self, code):
+    def analyze_code(self, code: str):
         response = client.responses.create(
             model=MODEL,
-            instructions=(
-                "Ты анализатор кода. "
-                "Найди ошибки, объясни причины и предложи исправления."
-            ),
-            input=code
+            instructions=SYSTEM_PROMPT,
+            input=(
+                "Проанализируй следующий код. "
+                "Найди ошибки и предложи исправления:\n\n"
+                + code
+            )
         )
 
         return response.output_text
